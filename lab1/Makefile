@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS+=-O3 -Wall
+CFLAGS+=-O3 -Wall -pthread
 #CXXFLAGS+=-g -O0 -Wall
 
 CC=gcc

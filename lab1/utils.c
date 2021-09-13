@@ -28,7 +28,33 @@ workItem* pop(queue q) {
 };
 
 
-void reader() {};
-void producer() {};
-void consumer() {};
-void writer() {};
+void* reader() {};
+void* producer() {};
+void* consumer() {};
+void* writer() {};
+
+void* consermer_manager() {
+	int flag = 1;
+	while(1) {
+		if (work.size > LOW_THRESHOLD && flag) {
+			consumer_info.size = 1;
+			consumer_info.consumer = (pthread_t *)malloc(sizeof(pthread_t) * 1);
+			pthread_create(consumer_info.consumer, NULL, consumer, NULL);
+			flag = 0;
+		}
+		if (work.size > HIGH_THRESHOLD) {
+			consumer_info.size++;
+			consumer_info.consumer = (pthread_t*)realloc(consumer_info.consumer, sizeof(pthread_t) * consumer_info.size);
+			pthread_create(consumer_info.consumer + consumer_info.size - 1, NULL, consumer, NULL);
+		}
+		if (work.size < LOW_THRESHOLD) {
+			// handle by consumer threads
+		}
+		
+		// make sure there is no consumer only when work is done
+		if (consumer_info.size == 0)
+			return;
+
+		sleep(10);
+	}
+}
