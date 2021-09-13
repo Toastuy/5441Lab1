@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define LOW_THRESHOLD 50
 #define HIGH_THRESHOLD 150
@@ -34,18 +35,27 @@ typedef struct queue
 	struct node* tail;
 } queue;
 
+
+typedef struct consumerInfo
+{
+	int size;
+	pthread_t* consumer;
+} consumerInfo;
+
 // queue functions
 void push(queue q, workItem* w);
 workItem* pop(queue q);
 
-// global queues and mutexes defined in main
+// global queues and mutexes defined globally in main file
 extern queue input, work, output;
-extern pthread_mutex_t input_lock, work_lock, output_lock;
+extern pthread_mutex_t input_lock, work_lock, output_lock, consumer_info_lock;
+extern consumerInfo consumer_info;
 
 // thread functions
-void reader();
-void producer();
-void consumer();
-void writer();
+void* reader();
+void* producer();
+void* consumer();
+void* writer();
+void* consermer_manager();
 
 #endif
