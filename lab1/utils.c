@@ -27,13 +27,56 @@ workItem* pop(queue q) {
 	return re;
 };
 
+// Called by a thread
+// Function will read all info from stdin, assign it to a corresponding
+// work item, and then push that workitem onto the input queue
+// Note: Mutex handled in Main.c
+void* reader() {
+    
+    // We need a counter to keep track of the order we read items
+    uint16_t orderNum;
+    
+    // The two pieces of info we'll need to get
+    char inCmd = 'c';
+    uint16_t inKey = 0;
+    
+    // Definitions
+    // CHECK: Definition above a declaration (newWork)
+    orderNum = 0;
+    
+    // For every set of cmd/key in stdin
+    // 1. Create a workItem for them
+    // 2. Put the inCmd and inKey into the workitem
+    // 3. Push workItem onto input queue
+    while (scanf("%c %i\n", inCmd, inKey)){
+        
+        // 1. Create a new workItem
+        struct workItem newWork;
+        
+        // 2. Give newWork the info we currently know
+        // CHECK: Do we need to init rest of struct?
+        newWork.id = orderNum;
+        newWork.cmd = inCmd;
+        newWork.original_key = inKey;
+        
+        // 3. Now push our newWork onto the input queue
+        pthread_mutex_lock(&input_lock);
+        push(input, &newWork);
+        pthread_mutex_unlock(&input_lock);
+        
+        // Increment our orderNum
+        orderNum = orderNum + 1;
+        printf("%i", inKey);
+        printf("%c", inCmd);
+    }
+    
+}
 
-void* reader() {};
 void* producer() {};
 void* consumer() {};
 void* writer() {};
 
-void* consumer_manager() {
+void* consermer_manager() {
 	int flag = 1;
 	while(1) {
 		if (work.size > LOW_THRESHOLD && flag) {
