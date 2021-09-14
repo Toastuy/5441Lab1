@@ -6,7 +6,7 @@ consumerInfo consumer_info;
 
 int main(int argc, char const *argv[])
 {
-	pthread_t reader, writer, consermer_manager;
+	pthread_t reader, writer, consumer_manager;
 	pthread_t producer[4];
 
 	// reader
@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
 
 	// consumer management
 
-	pthread_create(&consermer_manager, NULL, consermer_manager, NULL);
+	pthread_create(&consumer_manager, NULL, consumer_manager, NULL);
 
 	// writer
 	pthread_create(&writer, NULL, writer, NULL);

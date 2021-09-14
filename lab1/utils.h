@@ -56,6 +56,6 @@ void* reader();
 void* producer();
 void* consumer();
 void* writer();
-void* consermer_manager();
+void* consumer_manager();
 
 #endif

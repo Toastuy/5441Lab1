@@ -33,7 +33,7 @@ void* producer() {};
 void* consumer() {};
 void* writer() {};
 
-void* consermer_manager() {
+void* consumer_manager() {
 	int flag = 1;
 	while(1) {
 		if (work.size > LOW_THRESHOLD && flag) {
