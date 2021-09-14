@@ -54,8 +54,10 @@ void* reader() {
     // 2. Put the inCmd and inKey into the workitem
     // 3. Push workItem onto input queue
     while (scanf("%c %d\n", &inCmd, &inKey)){
-        if (inCmd == 'X')
+        if (inCmd == 'X'){
+        	input_finish = 1;
         	return;
+        }
         // 1. Create a new workItem
         struct workItem* newWork = (struct workItem*)malloc(sizeof(struct workItem));
         
@@ -66,9 +68,9 @@ void* reader() {
         newWork->original_key = inKey;
         
         // 3. Now push our newWork onto the input queue
-        // pthread_mutex_lock(&input_lock);
+        pthread_mutex_lock(&input_lock);
         push(&input, newWork);
-        // pthread_mutex_unlock(&input_lock);
+        pthread_mutex_unlock(&input_lock);
         
         // Increment our orderNum
         orderNum = orderNum + 1;
@@ -79,31 +81,73 @@ void* reader() {
 }
 
 void* producer() {};
-void* consumer() {};
+void* consumer() {
+	while(1) {
+		pthread_mutex_lock(&work_lock);
+		if (work.size > 0) {
+			if (work.size < LOW_THRESHOLD) {
+				fprintf(stderr, "Passed low threshold\n");
+				pthread_mutex_unlock(&work_lock);
+				return;
+			}
+			workItem* w = pop(&work);
+			if (work.size > HIGH_THRESHOLD) {
+				fprintf(stderr, "Passed high threshold, current workItem: %d %c %d\n", 
+					w->id, w->cmd, w->original_key);
+			}
+			if (work.size == FULL_SIZE)
+				fprintf(stderr, "Completely full, current workItem: %d %c %d\n", 
+					w->id, w->cmd, w->original_key);
+			pthread_mutex_unlock(&work_lock);
+			switch (w->cmd) {
+				case 'A':
+					w->decoded_key = transformA2(w->encode_key, &w->c_retval);
+					break;
+				case 'B':
+					w->decoded_key = transformB2(w->encode_key, &w->c_retval);
+					break;
+				case 'C':
+					w->decoded_key = transformC2(w->encode_key, &w->c_retval);
+					break;
+				case 'D':
+					w->decoded_key = transformD2(w->encode_key, &w->c_retval);
+					break;
+				case 'E':
+					w->decoded_key = transformE2(w->encode_key, &w->c_retval);
+					break;
+			}
+			output[w->id] = w;
+		}
+		else {
+			fprintf(stderr, "Completely empty\n");
+			pthread_mutex_unlock(&work_lock);
+			return;
+		}
+	}
+};
 void* writer() {};
 
-void* consermer_manager() {
+void* consumer_manager() {
 	int flag = 1;
 	while(1) {
 		if (work.size > LOW_THRESHOLD && flag) {
-			consumer_info.size = 1;
-			consumer_info.consumer = (pthread_t *)malloc(sizeof(pthread_t) * 1);
-			pthread_create(consumer_info.consumer, NULL, consumer, NULL);
+			pthread_t first;
+			pthread_create(&first, NULL, consumer, NULL);
 			flag = 0;
 		}
+		pthread_mutex_lock(&work_lock);
 		if (work.size > HIGH_THRESHOLD) {
-			consumer_info.size++;
-			consumer_info.consumer = (pthread_t*)realloc(consumer_info.consumer, sizeof(pthread_t) * consumer_info.size);
-			pthread_create(consumer_info.consumer + consumer_info.size - 1, NULL, consumer, NULL);
+			pthread_mutex_unlock(&work_lock);
+			pthread_t new;
+			pthread_create(&new, NULL, consumer, NULL);
 		}
-		if (work.size < LOW_THRESHOLD) {
-			// handle by consumer threads
+		else if (work.size == 0) {
+			pthread_mutex_unlock(&work_lock);
+			if (produce_finish)
+				pthread_exit(NULL);
 		}
-		
-		// make sure there is no consumer only when work is done
-		if (consumer_info.size == 0)
-			return;
-
-		sleep(10);
+		else
+			pthread_mutex_unlock(&work_lock);
+		sleep(5);
 	}
 }

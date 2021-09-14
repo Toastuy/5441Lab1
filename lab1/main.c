@@ -1,9 +1,11 @@
 #include "utils.h"
 
 queue input, work;
-pthread_mutex_t input_lock, work_lock, consumer_info_lock;
-consumerInfo consumer_info;
+pthread_mutex_t input_lock, work_lock;
 workItem* output[MAX_SIZE];
+
+int input_finish = 0;
+int produce_finish = 0;
 
 int main(int argc, char const *argv[])
 {
