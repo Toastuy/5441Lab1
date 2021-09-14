@@ -9,6 +9,7 @@
 
 #define LOW_THRESHOLD 50
 #define HIGH_THRESHOLD 150
+#define MAX_SIZE 200000
 
 typedef struct workItem
 {
@@ -43,11 +44,13 @@ typedef struct consumerInfo
 } consumerInfo;
 
 // queue functions
-void push(queue q, workItem* w);
-workItem* pop(queue q);
+void push(queue* q, workItem* w);
+workItem* pop(queue* q);
+void initializeQueue(queue* q);
 
 // global queues and mutexes defined globally in main file
-extern queue input, work, output;
+extern queue input, work;
+extern workItem* output[MAX_SIZE];
 extern pthread_mutex_t input_lock, work_lock, output_lock, consumer_info_lock;
 extern consumerInfo consumer_info;
 

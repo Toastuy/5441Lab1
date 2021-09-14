@@ -1,27 +1,30 @@
 #include "utils.h"
 
-queue input, work, output;
-pthread_mutex_t input_lock, work_lock, output_lock, consumer_info_lock;
+queue input, work;
+pthread_mutex_t input_lock, work_lock, consumer_info_lock;
 consumerInfo consumer_info;
+workItem* output[MAX_SIZE];
 
 int main(int argc, char const *argv[])
 {
-	pthread_t reader, writer, consumer_manager;
-	pthread_t producer[4];
+	initializeQueue(&input);
+	initializeQueue(&work);
+	pthread_t reader_t, writer_t, consumer_manager_t;
+	pthread_t producer_t[4];
 
 	// reader
-	pthread_create(&reader, NULL, reader, NULL);
+	pthread_create(&reader_t, NULL, reader, NULL);
 	
-	// producer
-	for (int i = 0; i < 4; i++)
-		pthread_create(producer + i, NULL, producer, NULL);
+	// // producer
+	// for (int i = 0; i < 4; i++)
+	// 	pthread_create(producer_t + i, NULL, producer, NULL);
 
-	// consumer management
+	// // consumer management
 
-	pthread_create(&consumer_manager, NULL, consumer_manager, NULL);
+	// pthread_create(&consumer_manager_t, NULL, consumer_manager, NULL);
 
-	// writer
-	pthread_create(&writer, NULL, writer, NULL);
+	// // writer
+	// pthread_create(&writer_t, NULL, writer, NULL);
 
 	pthread_exit(NULL);
 	return 0;

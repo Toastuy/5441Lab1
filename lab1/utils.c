@@ -1,30 +1,35 @@
 #include "utils.h"
 
 // mutex and threshold management should be implemented by caller
-void push(queue q, workItem* w) {
+void push(queue* q, workItem* w) {
 	struct node* new_node = (struct node*)malloc(sizeof(struct node));
 	new_node->w = w;
 	new_node->next = NULL;
-	if (q.head == NULL) {
-		q.head = new_node;
-		q.tail = new_node;
+	if (q->head == NULL) {
+		q->head = new_node;
+		q->tail = new_node;
 	}
 	else {
-		q.tail->next = new_node;
-		q.tail = new_node;
+		q->tail->next = new_node;
+		q->tail = new_node;
 	}
-	q.size++;
+	q->size++;
 };
 
-workItem* pop(queue q) {
-	if (q.head == NULL)
+workItem* pop(queue* q) {
+	if (q->head == NULL)
 		return NULL;
-	struct node* tmp = q.head;
-	q.head = q.head->next;
+	struct node* tmp = q->head;
+	q->head = q->head->next;
 	workItem* re = tmp->w;
 	free(tmp);
-	q.size--;
+	q->size--;
 	return re;
+};
+
+void initializeQueue(queue* q) {
+	q->size = 0;
+	q->head = q->tail = NULL;
 };
 
 // Called by a thread
@@ -37,37 +42,38 @@ void* reader() {
     uint16_t orderNum;
     
     // The two pieces of info we'll need to get
-    char inCmd = 'c';
-    uint16_t inKey = 0;
+    char inCmd;
+    uint16_t inKey;
     
     // Definitions
     // CHECK: Definition above a declaration (newWork)
-    orderNum = 0;
+    orderNum = 1;
     
     // For every set of cmd/key in stdin
     // 1. Create a workItem for them
     // 2. Put the inCmd and inKey into the workitem
     // 3. Push workItem onto input queue
-    while (scanf("%c %i\n", inCmd, inKey)){
-        
+    while (scanf("%c %d\n", &inCmd, &inKey)){
+        if (inCmd == 'X')
+        	return;
         // 1. Create a new workItem
-        struct workItem newWork;
+        struct workItem* newWork = (struct workItem*)malloc(sizeof(struct workItem));
         
         // 2. Give newWork the info we currently know
         // CHECK: Do we need to init rest of struct?
-        newWork.id = orderNum;
-        newWork.cmd = inCmd;
-        newWork.original_key = inKey;
+        newWork->id = orderNum;
+        newWork->cmd = inCmd;
+        newWork->original_key = inKey;
         
         // 3. Now push our newWork onto the input queue
-        pthread_mutex_lock(&input_lock);
-        push(input, &newWork);
-        pthread_mutex_unlock(&input_lock);
+        // pthread_mutex_lock(&input_lock);
+        push(&input, newWork);
+        // pthread_mutex_unlock(&input_lock);
         
         // Increment our orderNum
         orderNum = orderNum + 1;
-        printf("%i", inKey);
-        printf("%c", inCmd);
+        printf("%d %c %d\n", input.tail->w->id, input.tail->w->cmd, input.tail->w->original_key);
+        
     }
     
 }
