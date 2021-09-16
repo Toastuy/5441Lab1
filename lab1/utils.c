@@ -85,6 +85,7 @@ void* reader() {
 }
 
 void* consumer() {
+	time_t start = time(NULL);
 	while(1) {
 		pthread_mutex_lock(&work_lock);
 		if (work.size > 0) {
@@ -93,8 +94,9 @@ void* consumer() {
 				pthread_mutex_unlock(&work_lock);
 				if (pthread_self() != first_consumer) {
 #ifdef DEBUG
-				printf("consumer-%d deleted\n", pthread_self());
+					printf("consumer-%d deleted\n", pthread_self());
 #endif
+					consumer_time += time(NULL) - start;
 					return;
 				}
 			}
@@ -137,6 +139,7 @@ void* consumer() {
 #ifdef DEBUG
 				printf("consumer-%d deleted\n", pthread_self());
 #endif
+				consumer_time += time(NULL) - start;
 				return;
 			}
 		}
@@ -145,6 +148,7 @@ void* consumer() {
 //Will take items from the inout queue and make adjustments on them based on the info contained in the workItwm struct.
 
 void* producer() {
+	time_t start = time(NULL);
     while(1){
         pthread_mutex_lock(&input_lock);
         if (input.size == 0) {
@@ -154,6 +158,7 @@ void* producer() {
 #ifdef DEBUG
         		printf("produce finished\n");
 #endif
+        		producer_time += time(NULL) - start;
         		return;
         	}
         }
@@ -216,7 +221,8 @@ void* consumer_manager() {
 #ifdef DEBUG
 				printf("consumer manager existed\n");
 #endif
-				pthread_exit(NULL);
+				pthread_join(first_consumer, NULL);
+				return;
 			}
 		}
 		else

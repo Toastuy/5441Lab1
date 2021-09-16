@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
 
 #define LOW_THRESHOLD 5
 #define HIGH_THRESHOLD 15
@@ -49,7 +50,9 @@ extern queue input, work;
 extern workItem* output[MAX_SIZE];
 extern pthread_mutex_t input_lock, work_lock, output_lock;
 extern int input_finish, produce_finish;
-pthread_t first_consumer;
+extern pthread_t first_consumer;
+extern time_t producer_time, consumer_time;
+
 extern uint16_t transformA1(uint16_t input_val, double *retval);
 extern uint16_t transformB1(uint16_t input_val, double *retval);
 extern uint16_t transformC1(uint16_t input_val, double *retval);
