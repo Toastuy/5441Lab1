@@ -124,6 +124,33 @@ void* consumer() {
 			return;
 		}
 	}
+//Will take items from the inout queue and make adjustments on them based on the info contained in the workItwm struct.
+
+void* producer() {
+    while(input.size>0){
+        pthread_mutex_lock(&input_lock);
+        struct workItem currentWork = *pop(input);
+        pthread_mutex_unlock(&input_lock);
+        switch(currentWork.cmd){
+            case 'A':
+                currentWork.encode_key = transformA1(currentWork.original_key, &currentWork.p_retval);
+            break;
+            case 'B':
+                currentWork.encode_key = transformB1(currentWork.original_key, &currentWork.p_retval);
+            break;
+            case 'C':
+                currentWork.encode_key = transformC1(currentWork.original_key, &currentWork.p_retval);
+            break;
+            case 'D':
+                currentWork.encode_key = transformD1(currentWork.original_key, &currentWork.p_retval);
+            break;
+            case 'E':
+                currentWork.encode_key = transformE1(currentWork.original_key, &currentWork.p_retval);
+        }
+        pthread_mutex_lock(&work_lock);
+        push(work, &currentWork);
+        pthread_mutex_unlock(&work_lock);
+    }
 };
 void* writer() {};
 

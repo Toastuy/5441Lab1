@@ -48,6 +48,11 @@ extern queue input, work;
 extern workItem* output[MAX_SIZE];
 extern pthread_mutex_t input_lock, work_lock, output_lock;
 extern int input_finish, produce_finish;
+extern uint16_t transformA1(uint16_t input_val, double *retval);
+extern uint16_t transformB1(uint16_t input_val, double *retval);
+extern uint16_t transformC1(uint16_t input_val, double *retval);
+extern uint16_t transformD1(uint16_t input_val, double *retval);
+extern uint16_t transformE1(uint16_t input_val, double *retval);
 
 // thread functions
 void* reader();
