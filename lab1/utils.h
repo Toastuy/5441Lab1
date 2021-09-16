@@ -7,10 +7,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#define LOW_THRESHOLD 50
-#define HIGH_THRESHOLD 150
-#define FULL_SIZE 200
+#define LOW_THRESHOLD 5
+#define HIGH_THRESHOLD 15
+#define FULL_SIZE 20
 #define MAX_SIZE 200000
+#define DEBUG
 
 typedef struct workItem
 {
@@ -48,11 +49,19 @@ extern queue input, work;
 extern workItem* output[MAX_SIZE];
 extern pthread_mutex_t input_lock, work_lock, output_lock;
 extern int input_finish, produce_finish;
+pthread_t first_consumer;
 extern uint16_t transformA1(uint16_t input_val, double *retval);
 extern uint16_t transformB1(uint16_t input_val, double *retval);
 extern uint16_t transformC1(uint16_t input_val, double *retval);
 extern uint16_t transformD1(uint16_t input_val, double *retval);
 extern uint16_t transformE1(uint16_t input_val, double *retval);
+
+
+extern uint16_t transformA2(uint16_t input_val, double *retval);
+extern uint16_t transformB2(uint16_t input_val, double *retval);
+extern uint16_t transformC2(uint16_t input_val, double *retval);
+extern uint16_t transformD2(uint16_t input_val, double *retval);
+extern uint16_t transformE2(uint16_t input_val, double *retval);
 
 // thread functions
 void* reader();

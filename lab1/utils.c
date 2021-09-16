@@ -56,6 +56,9 @@ void* reader() {
     while (scanf("%c %d\n", &inCmd, &inKey)){
         if (inCmd == 'X'){
         	input_finish = 1;
+#ifdef DEBUG
+        	printf("input finished\n");
+#endif
         	return;
         }
         // 1. Create a new workItem
@@ -70,17 +73,17 @@ void* reader() {
         // 3. Now push our newWork onto the input queue
         pthread_mutex_lock(&input_lock);
         push(&input, newWork);
+#ifdef DEBUG
+        printf("reader: %d %c %d\n", input.tail->w->id, input.tail->w->cmd, input.tail->w->original_key);
+#endif
         pthread_mutex_unlock(&input_lock);
         
         // Increment our orderNum
         orderNum = orderNum + 1;
-        printf("%d %c %d\n", input.tail->w->id, input.tail->w->cmd, input.tail->w->original_key);
-        
     }
     
 }
 
-void* producer() {};
 void* consumer() {
 	while(1) {
 		pthread_mutex_lock(&work_lock);
@@ -88,7 +91,12 @@ void* consumer() {
 			if (work.size < LOW_THRESHOLD) {
 				fprintf(stderr, "Passed low threshold\n");
 				pthread_mutex_unlock(&work_lock);
-				return;
+				if (pthread_self() != first_consumer) {
+#ifdef DEBUG
+				printf("consumer-%d deleted\n", pthread_self());
+#endif
+					return;
+				}
 			}
 			workItem* w = pop(&work);
 			if (work.size > HIGH_THRESHOLD) {
@@ -117,39 +125,65 @@ void* consumer() {
 					break;
 			}
 			output[w->id] = w;
+#ifdef DEBUG
+        	printf("consumer-%d: %d %c %d %d %lf %d %lf\n", pthread_self(), w->id, w->cmd, w->original_key,
+        		w->encode_key, w->p_retval, w->decoded_key, w->c_retval);
+#endif
 		}
 		else {
 			fprintf(stderr, "Completely empty\n");
 			pthread_mutex_unlock(&work_lock);
-			return;
+			if (pthread_self() != first_consumer || produce_finish) {
+#ifdef DEBUG
+				printf("consumer-%d deleted\n", pthread_self());
+#endif
+				return;
+			}
 		}
 	}
+};
 //Will take items from the inout queue and make adjustments on them based on the info contained in the workItwm struct.
 
 void* producer() {
-    while(input.size>0){
+    while(1){
         pthread_mutex_lock(&input_lock);
-        struct workItem currentWork = *pop(input);
-        pthread_mutex_unlock(&input_lock);
-        switch(currentWork.cmd){
-            case 'A':
-                currentWork.encode_key = transformA1(currentWork.original_key, &currentWork.p_retval);
-            break;
-            case 'B':
-                currentWork.encode_key = transformB1(currentWork.original_key, &currentWork.p_retval);
-            break;
-            case 'C':
-                currentWork.encode_key = transformC1(currentWork.original_key, &currentWork.p_retval);
-            break;
-            case 'D':
-                currentWork.encode_key = transformD1(currentWork.original_key, &currentWork.p_retval);
-            break;
-            case 'E':
-                currentWork.encode_key = transformE1(currentWork.original_key, &currentWork.p_retval);
+        if (input.size == 0) {
+        	pthread_mutex_unlock(&input_lock);
+        	if (input_finish) {
+        		produce_finish = 1;
+#ifdef DEBUG
+        		printf("produce finished\n");
+#endif
+        		return;
+        	}
         }
-        pthread_mutex_lock(&work_lock);
-        push(work, &currentWork);
-        pthread_mutex_unlock(&work_lock);
+        else {
+	        workItem* currentWork = pop(&input);
+	        pthread_mutex_unlock(&input_lock);
+	        switch(currentWork->cmd){
+	            case 'A':
+	                currentWork->encode_key = transformA1(currentWork->original_key, &currentWork->p_retval);
+	            break;
+	            case 'B':
+	                currentWork->encode_key = transformB1(currentWork->original_key, &currentWork->p_retval);
+	            break;
+	            case 'C':
+	                currentWork->encode_key = transformC1(currentWork->original_key, &currentWork->p_retval);
+	            break;
+	            case 'D':
+	                currentWork->encode_key = transformD1(currentWork->original_key, &currentWork->p_retval);
+	            break;
+	            case 'E':
+	                currentWork->encode_key = transformE1(currentWork->original_key, &currentWork->p_retval);
+	        }
+	        pthread_mutex_lock(&work_lock);
+	        push(&work, currentWork);
+#ifdef DEBUG
+        	printf("producer-%d: %d %c %d %d %f\n", pthread_self(), work.tail->w->id, work.tail->w->cmd, work.tail->w->original_key,
+        		work.tail->w->encode_key, work.tail->w->p_retval);
+#endif
+	        pthread_mutex_unlock(&work_lock);
+	    }
     }
 };
 void* writer() {};
@@ -158,23 +192,35 @@ void* consumer_manager() {
 	int flag = 1;
 	while(1) {
 		if (work.size > LOW_THRESHOLD && flag) {
-			pthread_t first;
-			pthread_create(&first, NULL, consumer, NULL);
+			pthread_create(&first_consumer, NULL, consumer, NULL);
+#ifdef DEBUG
+			printf("consumer_manager: creating first consumer-%d\n", first_consumer);
+#endif
 			flag = 0;
 		}
 		pthread_mutex_lock(&work_lock);
 		if (work.size > HIGH_THRESHOLD) {
+#ifdef DEBUG
+			printf("current work size: %d\n", work.size);
+#endif
 			pthread_mutex_unlock(&work_lock);
 			pthread_t new;
 			pthread_create(&new, NULL, consumer, NULL);
+#ifdef DEBUG
+			printf("consumer_manager: creating a new consumer-%d\n", new);
+#endif
 		}
 		else if (work.size == 0) {
 			pthread_mutex_unlock(&work_lock);
-			if (produce_finish)
+			if (produce_finish) {
+#ifdef DEBUG
+				printf("consumer manager existed\n");
+#endif
 				pthread_exit(NULL);
+			}
 		}
 		else
 			pthread_mutex_unlock(&work_lock);
-		sleep(5);
+		// sleep(1);
 	}
-}
+};
