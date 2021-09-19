@@ -191,7 +191,42 @@ void* producer() {
 	    }
     }
 };
-void* writer() {};
+void* writer() {
+    
+    // Writing from an array that's sorted as it's filled
+    // We start writing whenever the work_queue is finished /
+    // everything is in the output array
+    // Array filled with workitems
+    
+    // Declare + everything we'll be outputting to stdout
+    int i;
+    uint16_t outId; // sequence number
+	int outPos; // work queue position
+	char outCmd; // cmd
+	uint16_t out_original_key; // input key
+	uint16_t out_encode_key; // encoded key by producer
+	double out_p_retval; // retval by producer
+	uint16_t out_decoded_key; //decoded key by consumer
+	double out_c_retval //retval by consumer
+    
+    // Check the work queue member "size"
+    if (work.size == 0){
+        for (i = 0; i < sizeof(output) / sizeof(workItem); i++){
+            
+            // get all the values we'll be outputting
+            outId = output[i]->id;
+            outPos = output[i]->pos;
+            outCmd = output[i]->cmd;
+            out_encode_key = output[i]->encode_key;
+            out_p_retval = output[i]->p_retval;
+            out_decoded_key = output[i]->decoded_key;
+            out_c_retval = output[i]->c_retval;
+            
+            printf("%d %d %c %d %lf %d %lf\n", outId, outPos, outCmd, out_encode_key, out_p_retval, out_decoded_key, out_c_retval);
+        }
+    }
+    
+};
 
 void* consumer_manager() {
 	int flag = 1;
