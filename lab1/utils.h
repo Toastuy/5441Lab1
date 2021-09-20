@@ -12,7 +12,7 @@
 #define HIGH_THRESHOLD 15
 #define FULL_SIZE 20
 #define MAX_SIZE 200000
-#define DEBUG
+// #define DEBUG
 
 typedef struct workItem
 {
@@ -23,7 +23,7 @@ typedef struct workItem
 	uint16_t encode_key; // encoded key by producer
 	double p_retval; // retval by producer
 	uint16_t decoded_key; //decoded key by consumer
-	double c_retval //retval by consumer
+	double c_retval; //retval by consumer
 } workItem;
 
 struct node
@@ -49,7 +49,7 @@ void initializeQueue(queue* q);
 extern queue input, work;
 extern workItem* output[MAX_SIZE];
 extern pthread_mutex_t input_lock, work_lock, output_lock;
-extern int input_finish, produce_finish;
+extern int input_finish, produce_finish, consume_finish, total_num;
 extern pthread_t first_consumer;
 extern time_t producer_time, consumer_time;
 

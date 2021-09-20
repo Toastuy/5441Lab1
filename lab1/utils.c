@@ -53,13 +53,14 @@ void* reader() {
     // 1. Create a workItem for them
     // 2. Put the inCmd and inKey into the workitem
     // 3. Push workItem onto input queue
-    while (scanf("%c %d\n", &inCmd, &inKey)){
+    while (scanf("%c %hd\n", &inCmd, &inKey)){
         if (inCmd == 'X'){
         	input_finish = 1;
+        	total_num = orderNum - 1;
 #ifdef DEBUG
         	printf("input finished\n");
 #endif
-        	return;
+        	return NULL;
         }
         // 1. Create a new workItem
         struct workItem* newWork = (struct workItem*)malloc(sizeof(struct workItem));
@@ -81,7 +82,7 @@ void* reader() {
         // Increment our orderNum
         orderNum = orderNum + 1;
     }
-    
+    return NULL;
 }
 
 void* consumer() {
@@ -94,10 +95,10 @@ void* consumer() {
 				pthread_mutex_unlock(&work_lock);
 				if (pthread_self() != first_consumer) {
 #ifdef DEBUG
-					printf("consumer-%d deleted\n", pthread_self());
+					printf("consumer-%ld deleted\n", pthread_self());
 #endif
 					consumer_time += time(NULL) - start;
-					return;
+					return NULL;
 				}
 			}
 			workItem* w = pop(&work);
@@ -126,10 +127,12 @@ void* consumer() {
 					w->decoded_key = transformE2(w->encode_key, &w->c_retval);
 					break;
 			}
+			pthread_mutex_lock(&output_lock);
 			output[w->id] = w;
+			pthread_mutex_unlock(&output_lock);
 #ifdef DEBUG
-        	printf("consumer-%d: %d %c %d %d %lf %d %lf\n", pthread_self(), w->id, w->cmd, w->original_key,
-        		w->encode_key, w->p_retval, w->decoded_key, w->c_retval);
+        	printf("consumer-%ld: %d %c %d %d %lf %d %lf\n", pthread_self(), output[w->id]->id, output[w->id]->cmd, output[w->id]->original_key,
+        		output[w->id]->encode_key, output[w->id]->p_retval, output[w->id]->decoded_key, output[w->id]->c_retval);
 #endif
 		}
 		else {
@@ -137,10 +140,10 @@ void* consumer() {
 			pthread_mutex_unlock(&work_lock);
 			if (pthread_self() != first_consumer || produce_finish) {
 #ifdef DEBUG
-				printf("consumer-%d deleted\n", pthread_self());
+				printf("consumer-%ld deleted\n", pthread_self());
 #endif
 				consumer_time += time(NULL) - start;
-				return;
+				return NULL;
 			}
 		}
 	}
@@ -159,7 +162,7 @@ void* producer() {
         		printf("produce finished\n");
 #endif
         		producer_time += time(NULL) - start;
-        		return;
+        		return NULL;
         	}
         }
         else {
@@ -182,9 +185,10 @@ void* producer() {
 	                currentWork->encode_key = transformE1(currentWork->original_key, &currentWork->p_retval);
 	        }
 	        pthread_mutex_lock(&work_lock);
+	        currentWork->pos = work.size;
 	        push(&work, currentWork);
 #ifdef DEBUG
-        	printf("producer-%d: %d %c %d %d %f\n", pthread_self(), work.tail->w->id, work.tail->w->cmd, work.tail->w->original_key,
+        	printf("producer-%ld: %d %c %d %d %f\n", pthread_self(), work.tail->w->id, work.tail->w->cmd, work.tail->w->original_key,
         		work.tail->w->encode_key, work.tail->w->p_retval);
 #endif
 	        pthread_mutex_unlock(&work_lock);
@@ -199,33 +203,46 @@ void* writer() {
     // Array filled with workitems
     
     // Declare + everything we'll be outputting to stdout
-    int i;
+    int i = 1;
     uint16_t outId; // sequence number
 	int outPos; // work queue position
 	char outCmd; // cmd
-	uint16_t out_original_key; // input key
 	uint16_t out_encode_key; // encoded key by producer
 	double out_p_retval; // retval by producer
 	uint16_t out_decoded_key; //decoded key by consumer
-	double out_c_retval //retval by consumer
-    
+	double out_c_retval; //retval by consumer
+#ifdef DEBUG
+	printf("writer started\n");
+#endif
     // Check the work queue member "size"
-    if (work.size == 0){
-        for (i = 0; i < sizeof(output) / sizeof(workItem); i++){
-            
-            // get all the values we'll be outputting
-            outId = output[i]->id;
-            outPos = output[i]->pos;
-            outCmd = output[i]->cmd;
-            out_encode_key = output[i]->encode_key;
-            out_p_retval = output[i]->p_retval;
-            out_decoded_key = output[i]->decoded_key;
-            out_c_retval = output[i]->c_retval;
-            
-            printf("%d %d %c %d %lf %d %lf\n", outId, outPos, outCmd, out_encode_key, out_p_retval, out_decoded_key, out_c_retval);
-        }
-    }
-    
+    while(!consume_finish || i <= total_num) {
+    	pthread_mutex_lock(&output_lock);
+	    while (output[i] == NULL) {
+#ifdef DEBUG
+	    	printf("writer: waiting for %d's output, total_num: %d\n", i, total_num);
+#endif
+	    	pthread_mutex_unlock(&output_lock);
+	    	sleep(3);
+	    	pthread_mutex_lock(&output_lock);
+	    }
+	       
+        // get all the values we'll be outputting
+        outId = output[i]->id;
+        outPos = output[i]->pos;
+        outCmd = output[i]->cmd;
+        out_encode_key = output[i]->encode_key;
+        out_p_retval = output[i]->p_retval;
+        out_decoded_key = output[i]->decoded_key;
+        out_c_retval = output[i]->c_retval;
+        pthread_mutex_unlock(&output_lock);
+        i++;
+        
+        printf("%d %d %c %d %lf %d %lf\n", outId, outPos, outCmd, out_encode_key, out_p_retval, out_decoded_key, out_c_retval);
+	}
+#ifdef DEBUG
+    	printf("writer existed\n");
+#endif
+    return NULL;
 };
 
 void* consumer_manager() {
@@ -234,7 +251,7 @@ void* consumer_manager() {
 		if (work.size > LOW_THRESHOLD && flag) {
 			pthread_create(&first_consumer, NULL, consumer, NULL);
 #ifdef DEBUG
-			printf("consumer_manager: creating first consumer-%d\n", first_consumer);
+			printf("consumer_manager: creating first consumer-%ld\n", first_consumer);
 #endif
 			flag = 0;
 		}
@@ -247,7 +264,7 @@ void* consumer_manager() {
 			pthread_t new;
 			pthread_create(&new, NULL, consumer, NULL);
 #ifdef DEBUG
-			printf("consumer_manager: creating a new consumer-%d\n", new);
+			printf("consumer_manager: creating a new consumer-%ld\n", new);
 #endif
 		}
 		else if (work.size == 0) {
@@ -257,7 +274,8 @@ void* consumer_manager() {
 				printf("consumer manager existed\n");
 #endif
 				pthread_join(first_consumer, NULL);
-				return;
+				consume_finish = 1;
+				return NULL;
 			}
 		}
 		else
