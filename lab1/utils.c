@@ -87,27 +87,28 @@ void* reader() {
 
 void* consumer() {
 	time_t start = time(NULL);
+	int low_threshold_flag = 0;
+	int empty_flag = 0;
 	while(1) {
 		pthread_mutex_lock(&work_lock);
 		if (work.size > 0) {
-			if (work.size < LOW_THRESHOLD) {
-				fprintf(stderr, "Passed low threshold\n");
-				pthread_mutex_unlock(&work_lock);
-				if (pthread_self() != first_consumer) {
-#ifdef DEBUG
-					printf("consumer-%ld deleted\n", pthread_self());
-#endif
-					consumer_time += time(NULL) - start;
-					return NULL;
-				}
-			}
 			workItem* w = pop(&work);
+			if (work.size < LOW_THRESHOLD) {
+				fprintf(stderr, "Passed low threshold, current work item: %d %c %d\n",
+					w->id, w->cmd, w->original_key);
+				low_threshold_flag = 1;
+			}
+			if (work.size == 0) {
+				fprintf(stderr, "Completely empty, current work item: %d %c %d\n",
+					w->id, w->cmd, w->original_key);
+				empty_flag = 1;
+			}
 			if (work.size > HIGH_THRESHOLD) {
 				fprintf(stderr, "Passed high threshold, current workItem: %d %c %d\n", 
 					w->id, w->cmd, w->original_key);
 			}
 			if (work.size == FULL_SIZE)
-				fprintf(stderr, "Completely full, current workItem: %d %c %d\n", 
+				fprintf(stderr, "Completely full, current work item: %d %c %d\n", 
 					w->id, w->cmd, w->original_key);
 			pthread_mutex_unlock(&work_lock);
 			switch (w->cmd) {
@@ -136,8 +137,19 @@ void* consumer() {
 #endif
 		}
 		else {
-			fprintf(stderr, "Completely empty\n");
 			pthread_mutex_unlock(&work_lock);
+			empty_flag = 1;
+		}
+		if (low_threshold_flag) {
+			if (pthread_self() != first_consumer) {
+#ifdef DEBUG
+				printf("consumer-%ld deleted\n", pthread_self());
+#endif
+				consumer_time += time(NULL) - start;
+				return NULL;
+			}
+		}
+		if (empty_flag) {
 			if (pthread_self() != first_consumer || produce_finish) {
 #ifdef DEBUG
 				printf("consumer-%ld deleted\n", pthread_self());
