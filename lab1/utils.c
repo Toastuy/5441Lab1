@@ -169,6 +169,7 @@ void* producer() {
         if (input.size == 0) {
         	pthread_mutex_unlock(&input_lock);
         	if (input_finish) {
+        		pthread_barrier_wait(&produce_barrier);
         		produce_finish = 1;
 #ifdef DEBUG
         		printf("produce finished\n");

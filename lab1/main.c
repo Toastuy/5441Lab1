@@ -4,6 +4,7 @@ queue input, work;
 pthread_mutex_t input_lock, work_lock, output_lock;
 workItem* output[MAX_SIZE];
 pthread_t first_consumer;
+pthread_barrier_t produce_barrier;
 
 int input_finish = 0;
 int produce_finish = 0;
@@ -20,6 +21,7 @@ int main(int argc, char const *argv[])
 	initializeQueue(&work);
 	pthread_t reader_t, writer_t, consumer_manager_t;
 	pthread_t producer_t[4];
+	pthread_barrier_init(&produce_barrier, NULL, 4);
 
 	for (int i = 0; i < MAX_SIZE; i++)
 		output[i] = NULL;

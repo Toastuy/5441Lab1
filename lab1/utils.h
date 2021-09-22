@@ -52,6 +52,7 @@ extern pthread_mutex_t input_lock, work_lock, output_lock;
 extern int input_finish, produce_finish, consume_finish, total_num;
 extern pthread_t first_consumer;
 extern time_t producer_time, consumer_time;
+extern pthread_barrier_t produce_barrier;
 
 extern uint16_t transformA1(uint16_t input_val, double *retval);
 extern uint16_t transformB1(uint16_t input_val, double *retval);
