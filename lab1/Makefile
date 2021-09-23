@@ -1,25 +1,25 @@
 .PHONY: all clean
 
-CFLAGS+=-O3 -g -Wall -pthread
-#CXXFLAGS+=-g -O0 -Wall
+CFLAGS+=-O3 -Wall -pthread
 
 CC=gcc
 
 FILES = transformMat.o \
-		utils.o
+		utils.o \
+		main.o
 
 # FILES = utils.o
 
 
-DRIVERS = main \
+DRIVERS = lab1_ruochenj_jiang.2091 \
 
-DRIVER_OBJS = $(DRIVERS)
 
 all: $(DRIVERS)
 
 clean:
-	rm -f $(DRIVER_OBJS)
-	rm -f utils.o
+	rm -f $(DRIVERS)
+	rm -f utils.o main.o
 
-$(DRIVER_OBJS): $(FILES)
+$(DRIVERS): $(FILES)
+	$(CC) $(CFLAGS) -o $(DRIVERS) $(FILES)
 
