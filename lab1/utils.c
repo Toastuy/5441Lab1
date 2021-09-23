@@ -92,6 +92,7 @@ void* consumer() {
 	while(1) {
 		pthread_mutex_lock(&work_lock);
 		if (work.size > 0) {
+			empty_flag = 0;
 			workItem* w = pop(&work);
 			if (work.size < LOW_THRESHOLD) {
 				fprintf(stderr, "Passed low threshold, current work item: %d %c %d\n",
@@ -170,6 +171,7 @@ void* producer() {
         	pthread_mutex_unlock(&input_lock);
         	if (input_finish) {
         		pthread_barrier_wait(&produce_barrier);
+			sleep(5);
         		produce_finish = 1;
 #ifdef DEBUG
         		printf("produce finished\n");
@@ -237,6 +239,12 @@ void* writer() {
 	    	pthread_mutex_unlock(&output_lock);
 	    	sleep(3);
 	    	pthread_mutex_lock(&output_lock);
+			if (consume_finish && i > total_num) {
+#ifdef DEBUG
+		    	printf("writer exited\n");
+#endif
+		    	return NULL;			
+			}
 	    }
 	       
         // get all the values we'll be outputting

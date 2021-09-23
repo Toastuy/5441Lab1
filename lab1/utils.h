@@ -8,9 +8,9 @@
 #include <unistd.h>
 #include <time.h>
 
-#define LOW_THRESHOLD 5
-#define HIGH_THRESHOLD 15
-#define FULL_SIZE 20
+#define LOW_THRESHOLD 50
+#define HIGH_THRESHOLD 150
+#define FULL_SIZE 200
 #define MAX_SIZE 200000
 // #define DEBUG
 
